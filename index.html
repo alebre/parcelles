@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Chasse-Parcelle</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Parcelles">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#2f5d3a">
+<style>
+:root{--bg:#f3f1ea;--card:#fff;--fg:#1d2420;--mut:#66706a;--line:#dcd8cb;--acc:#2f5d3a;--acc-fg:#fff;--soft:#e4ecdf;--warn:#9a5b00}
+@media (prefers-color-scheme:dark){:root{--bg:#141a16;--card:#1d2520;--fg:#e8ece6;--mut:#98a39b;--line:#2f3a33;--acc:#7fc08d;--acc-fg:#0f1c13;--soft:#25352a;--warn:#e0a85a}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+ padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+main{max-width:720px;margin:0 auto;display:grid;gap:14px}
+h1{font-size:1.5rem;margin:4px 0 0;letter-spacing:-.01em}
+.sub{color:var(--mut);margin:0;font-size:.9rem}
+form,.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+form{display:grid;gap:12px}
+label{display:grid;gap:4px;font-size:.82rem;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+input[type=text],input[type=number],input[type=search],select{font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%;text-transform:none;letter-spacing:0;font-weight:400}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.row,.row2{align-items:end}
+.row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.chk{display:flex;gap:10px;align-items:center;text-transform:none;letter-spacing:0;font-size:.95rem;color:var(--fg);font-weight:400}
+.chk input{width:22px;height:22px;accent-color:var(--acc);flex:none}
+button.go{font:inherit;font-weight:700;background:var(--acc);color:var(--acc-fg);border:0;border-radius:12px;padding:14px;min-height:48px}
+button.go:disabled{opacity:.55}
+button.alt{font:inherit;background:var(--soft);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:left;width:100%}
+details{font-size:.9rem;color:var(--mut)}
+summary{cursor:pointer;font-weight:600;padding:4px 0}
+details p{margin:6px 0}
+details ul{margin:6px 0;padding-left:18px}
+#statut{font-size:.9rem;color:var(--mut);min-height:1.2em}
+#statut.err{color:var(--warn)}
+progress{width:100%;height:6px;accent-color:var(--acc)}
+.res{display:grid;gap:10px}
+.tete{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.badge{font-size:.75rem;font-weight:700;background:var(--soft);border-radius:99px;padding:3px 9px}
+.tot{font-weight:700;font-variant-numeric:tabular-nums}
+.refs{font-weight:600;overflow-wrap:anywhere}
+.det{font-size:.88rem;color:var(--mut);overflow-wrap:anywhere}
+.vigs{display:grid;gap:10px}
+a.vig{display:block;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg)}
+.vig .img{position:relative;aspect-ratio:960/600;width:100%;background:var(--soft)}
+.vig img,.vig svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.vig .leg{display:flex;justify-content:space-between;gap:8px;padding:8px 12px;font-size:.88rem;font-weight:600}
+.vig .leg span:last-child{color:var(--mut);font-weight:400}
+.vig .vide{position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:var(--mut);font-size:.85rem;padding:12px;text-align:center}
+.liens{display:flex;flex-wrap:wrap;gap:8px}
+.liens a{color:var(--acc);font-weight:600;text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:8px 13px;font-size:.9rem;background:var(--bg)}
+footer{font-size:.78rem;color:var(--mut);text-align:center}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Chasse-Parcelle</h1>
+    <p class="sub">Parcelles cadastrales par surface, seules ou contiguës.</p>
+  </header>
+
+  <form id="f" autocomplete="off">
+    <label>Surface recherchée (m²)
+      <input id="surface" type="number" inputmode="decimal" min="1" step="any" required placeholder="1200">
+    </label>
+    <label>Commune, code postal ou INSEE
+      <input id="commune" type="search" placeholder="44240 ou Sucé-sur-Erdre" autocapitalize="off" autocorrect="off">
+    </label>
+    <div class="row">
+      <label>Tolérance %<input id="tol" type="number" inputmode="decimal" step="any" min="0" value="2"></label>
+      <label>Parcelles max<input id="maxp" type="number" inputmode="numeric" min="2" max="6" value="3"></label>
+      <label>Résultats<input id="maxr" type="number" inputmode="numeric" min="1" max="100" value="20"></label>
+    </div>
+    <div class="row2">
+      <label>Piscine
+        <select id="piscine"><option value="">Indifférent</option><option value="oui">Avec piscine</option><option value="non">Sans piscine</option></select>
+      </label>
+      <label>Construction
+        <select id="constr"><option value="">Indifférent</option><option value="oui">Avec bâtiment</option></select>
+      </label>
+    </div>
+    <label id="seuilw" hidden>Surface minimale du bâtiment (m²)
+      <input id="seuil" type="number" inputmode="decimal" min="0" step="any" value="10">
+    </label>
+    <label class="chk"><input id="aussi" type="checkbox"> Chercher aussi des parcelles contiguës si une parcelle seule correspond</label>
+    <label class="chk"><input id="voies" type="checkbox"> Écarter les voies publiques (via OpenStreetMap)</label>
+    <label class="chk"><input id="inclus" type="checkbox"> Garder aussi les groupes qui contiennent déjà une solution plus petite</label>
+    <details>
+      <summary>Miniature Google (optionnel)</summary>
+      <p>Sans clé, les deux miniatures sont des photos aériennes IGN. Avec une clé Google Maps Static API, la miniature Google montre la vue satellite Google.</p>
+      <label>Clé Google Maps Static API<input id="gkey" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="AIza…"></label>
+    </details>
+    <button class="go" id="go" type="submit">Rechercher</button>
+    <progress id="prog" hidden max="1" value="0"></progress>
+    <div id="statut" role="status" aria-live="polite"></div>
+  </form>
+
+  <div id="choix" class="res" hidden></div>
+  <div id="out" class="res"></div>
+  <footer>Données : cadastre Etalab, API Géo, API Adresse (data.gouv.fr), OpenStreetMap, photos aériennes IGN</footer>
+</main>
+
+<script src="core.js?v=5"></script>
+<script src="recherche.js?v=5"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const INSEE_DEFAUT = "44201";
+const GEO = "https://geo.api.gouv.fr/communes";
+const CH = "nom,code,codeDepartement,codesPostaux";
+const CACHE = "cadastre-v1";
+const S3 = "https://cadastre.s3.rbx.io.cloud.ovh.net";
+const DATE_CONNUE = "2026-09-01";
+
+function statut(t, err) { const s = $("statut"); s.textContent = t; s.className = err ? "err" : ""; }
+function prog(v) { const p = $("prog"); p.hidden = v == null; if (v != null) p.value = v; }
+const pause = () => new Promise(r => setTimeout(r, 0));
+const erreurReseau = e => e instanceof TypeError && /fetch|network|load failed/i.test(e.message) ? " (réseau ou accès bloqué)" : "";
+
+async function json(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Erreur ${r.status} sur ${new URL(url).host}`);
+  return r.json();
+}
+
+/* ---------- commune ---------- */
+async function chercherCommunes(saisie) {
+  const s = saisie.trim();
+  if (!s) return [await json(`${GEO}/${INSEE_DEFAUT}?fields=${CH}`)];
+  if (/^\d{5}$/.test(s)) {
+    const parCp = await json(`${GEO}?codePostal=${s}&fields=${CH}`);
+    if (parCp.length) return parCp;
+    try { return [await json(`${GEO}/${s}?fields=${CH}`)]; } catch { return []; }
+  }
+  const cp = s.match(/\b\d{5}\b/), nom = s.replace(/\b\d{5}\b/, "").trim();
+  let l = cp ? await json(`${GEO}?codePostal=${cp[0]}&fields=${CH}`)
+             : await json(`${GEO}?nom=${encodeURIComponent(nom)}&fields=${CH}&boost=population&limit=10`);
+  const v = Core.normaliser(nom);
+  if (nom && cp) { const ex = l.filter(c => Core.normaliser(c.nom) === v); l = ex.length ? ex : l.filter(c => Core.normaliser(c.nom).includes(v)); }
+  else if (nom) { const ex = l.filter(c => Core.normaliser(c.nom) === v); if (ex.length === 1) l = ex; }
+  return l;
+}
+
+/* ---------- cadastre : le 302 de cadastre.data.gouv.fr n'a pas d'en-tête CORS, on vise le stockage OVH ---------- */
+async function lireGz(resp) {
+  if (!("DecompressionStream" in window)) throw new Error("Ce navigateur ne sait pas décompresser le fichier (iOS 16.4 minimum).");
+  return JSON.parse(await new Response(resp.body.pipeThrough(new DecompressionStream("gzip"))).text());
+}
+async function datesDisponibles() {
+  try {
+    const r = await fetch(`${S3}/?list-type=2&prefix=etalab-cadastre/&delimiter=/`);
+    if (!r.ok) return [];
+    const x = new DOMParser().parseFromString(await r.text(), "application/xml");
+    return [...x.querySelectorAll("CommonPrefixes > Prefix")].map(n => n.textContent.match(/(\d{4}-\d{2}-\d{2})\/$/)).filter(Boolean).map(m => m[1]).sort().reverse();
+  } catch { return []; }
+}
+async function recupererCadastre(code, dept, couche) {
+  const chemin = d => `${S3}/etalab-cadastre/${d}/geojson/communes/${dept}/${code}/cadastre-${code}-${couche}.json.gz`;
+  let derniere = "réseau";
+  const tenter = async u => { try { const r = await fetch(u); if (r.ok) return { r, u }; derniere = `HTTP ${r.status}`; } catch (e) { derniere = e.message; } return null; };
+  let ok = await tenter(chemin("latest")); if (ok) return ok;
+  for (const d of await datesDisponibles()) { ok = await tenter(chemin(d)); if (ok) return ok; }
+  ok = await tenter(chemin(DATE_CONNUE)); if (ok) return ok;
+  throw new Error(`Cadastre inaccessible (${derniere})`);
+}
+async function telecharger(code, dept, couche) {
+  let cache = null; try { cache = await caches.open(CACHE); } catch {}
+  let hit = null;
+  if (cache) { for (const k of await cache.keys()) if (k.url.includes(`cadastre-${code}-${couche}.`)) { hit = await cache.match(k); break; } }
+  if (hit) { statut(`Cadastre (${couche}) lu depuis la mémoire de l'appareil…`); return lireGz(hit); }
+  statut(`Téléchargement du cadastre (${couche})…`);
+  const { r, u } = await recupererCadastre(code, dept, couche);
+  if (cache) { try { await cache.put(u, r.clone()); } catch {} }
+  return lireGz(r);
+}
+
+/* ---------- adresse (API Adresse) : libellé et code postal ---------- */
+const memAdr = new Map();
+async function adresse(pt, code) {
+  const k = pt.x.toFixed(6) + "," + pt.y.toFixed(6);
+  if (memAdr.has(k)) return memAdr.get(k);
+  let info;
+  try {
+    const d = await json(`https://api-adresse.data.gouv.fr/reverse/?lon=${pt.x}&lat=${pt.y}&citycode=${code}&limit=1`);
+    const f = d.features && d.features[0];
+    info = f && f.properties.citycode === code ? { label: `${f.properties.label} (~${f.properties.distance ?? "?"} m)`, cp: f.properties.postcode || null }
+                                               : { label: "Aucune adresse trouvée sur la commune", cp: null };
+  } catch { info = { label: "Adresse indisponible", cp: null }; }
+  memAdr.set(k, info);
+  await new Promise(r => setTimeout(r, 30));
+  return info;
+}
+
+/* ---------- affichage ---------- */
+function el(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) k === "class" ? e.className = v : e.setAttribute(k, v);
+  for (const c of kids) e.append(c);
+  return e;
+}
+const lien = (href, txt) => el("a", { href, target: "_blank", rel: "noopener" }, txt);
+const SVGNS = "http://www.w3.org/2000/svg";
+
+// Miniature cliquable : photo aérienne (≥ 960 × 600 px réels) + contour des parcelles + repère rouge.
+function vignette(href, titre, detail, src, srcAlt, ign, srcRepli) {
+  const img = el("img", { alt: `Aperçu aérien : ${titre}`, width: ign.w, height: ign.h, loading: "lazy", decoding: "async", referrerpolicy: "no-referrer" });
+  const vide = el("div", { class: "vide" }, "Image indisponible : touche pour ouvrir le lien");
+  const zone = el("div", { class: "img" }, img, vide);
+  let essais = 0;
+  const avec = [src, srcAlt, srcRepli].filter(Boolean);
+  img.onerror = () => { essais++; if (essais < avec.length) img.src = avec[essais]; else { img.hidden = true; vide.style.display = "flex"; } };
+  img.src = avec[0];
+  const svg = document.createElementNS(SVGNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${ign.w} ${ign.h}`); svg.setAttribute("preserveAspectRatio", "none"); svg.setAttribute("aria-hidden", "true");
+  for (const d of ign.polys) {
+    const p = document.createElementNS(SVGNS, "path");
+    p.setAttribute("d", d); p.setAttribute("fill", "rgba(255,210,63,.16)"); p.setAttribute("stroke", "#ffd23f"); p.setAttribute("stroke-width", "3"); p.setAttribute("fill-rule", "evenodd");
+    svg.append(p);
+  }
+  const c = document.createElementNS(SVGNS, "circle");
+  c.setAttribute("cx", ign.pin[0]); c.setAttribute("cy", ign.pin[1]); c.setAttribute("r", "11"); c.setAttribute("fill", "#e5322d"); c.setAttribute("stroke", "#fff"); c.setAttribute("stroke-width", "4");
+  svg.append(c);
+  zone.append(svg);
+  return el("a", { class: "vig", href, target: "_blank", rel: "noopener", "aria-label": `${titre} : ouvrir` }, zone,
+    el("div", { class: "leg" }, el("span", {}, titre), el("span", {}, detail)));
+}
+
+async function afficher(P, g, n, res, prm, code, out, B) {
+  const total = g.reduce((s, i) => s + P[i].surface, 0), ps = g.map(i => P[i]);
+  const rp = Rech.reperes(P, g, B, res.k, prm.piscine);
+  const lg = Rech.lienGoogle(rp.point), lb = Rech.lienBing3D(rp.point, rp.titre), lo = Rech.lienOSM(rp.osm);
+  const nbPis = ps.reduce((s, p) => s + (p.piscines || 0), 0);
+  // Vignettes : aérienne IGN cadrée sur le groupe (Google) et élargie (Bing 3D)
+  const proche = Rech.vignetteIGN(P, g, res.k, rp.point, 1, 50);
+  const large = Rech.vignetteIGN(P, g, res.k, rp.point, 2.5, 120);
+  const gUrl = Rech.vignetteGoogle(rp.point, prm.gkey);
+  const vigs = el("div", { class: "vigs" },
+    vignette(lg, "Google Maps", gUrl ? "vue Google · ouvrir" : "aperçu IGN · ouvrir", gUrl || proche.url, gUrl ? proche.url : proche.urlAlt, proche, gUrl ? proche.urlAlt : null),
+    vignette(lb, "Bing 3D", "aperçu IGN élargi · ouvrir", large.url, large.urlAlt, large, null));
+  const adrEl = el("div", { class: "det" }, "Adresse en cours…");
+  const liens = el("div", { class: "liens" }, lien(lg, "Google Maps"), lien(lb, "Bing 3D"), lien(lo, "OpenStreetMap"));
+  ps.forEach(p => liens.append(lien(Core.urlCadastre(p), ps.length > 1 ? `Cadastre ${p.ref}` : "Cadastre")));
+  const card = el("section", { class: "card res" },
+    el("div", { class: "tete" }, el("span", { class: "badge" }, `#${n} · ${g.length === 1 ? "Parcelle seule" : g.length + " parcelles contiguës"}`), el("span", { class: "tot" }, `${total} m²`)),
+    el("div", { class: "refs" }, ps.map(p => p.ref).join(" + ")),
+    el("div", { class: "det" }, g.length > 1 ? "Surfaces : " + ps.map(p => p.surface).join(" + ") + " m²" : ""),
+    adrEl);
+  if (prm.piscine) card.append(el("div", { class: "det" }, `Piscine : ${nbPis ? `oui (${nbPis})` : "non détectée"}`));
+  card.append(el("div", { class: "det" }, `Repère : ${rp.info}`), el("div", { class: "det" }, `OpenStreetMap : ${rp.infoOsm}`), vigs, liens);
+  out.append(card);
+  const vues = [];
+  for (const p of ps) { const a = (await adresse(p.pt, code)).label; if (!vues.includes(a)) vues.push(a); }
+  adrEl.textContent = vues.join(" | ");
+}
+
+/* ---------- recherche ---------- */
+async function lancer(commune, saisie) {
+  const out = $("out"); out.replaceChildren(); $("choix").hidden = true;
+  const code = commune.code;
+  const cpSaisi = (saisie.match(/\b\d{5}\b/) || [])[0];
+  const cpFiltre = cpSaisi && commune.codesPostaux.includes(cpSaisi) && commune.codesPostaux.length > 1 ? cpSaisi : "";
+  const prm = {
+    cible: parseFloat($("surface").value), tol: parseFloat($("tol").value || "2"),
+    maxN: parseInt($("maxp").value || "3", 10), maxR: parseInt($("maxr").value || "20", 10),
+    aussi: $("aussi").checked, garderInclus: $("inclus").checked,
+    construction: $("constr").value === "oui", seuilBati: parseFloat($("seuil").value || "10"),
+    exclureVoies: $("voies").checked, piscine: $("piscine").value, cpFiltre,
+    gkey: $("gkey").value.trim(),
+  };
+  $("go").disabled = true;
+  try {
+    statut(`${commune.nom} (INSEE ${code}) : chargement…`); prog(0);
+    const P = Core.chargerParcelles(await telecharger(code, commune.codeDepartement, "parcelles"), code);
+    statut(`${P.length} parcelles. Recherche…`); await pause();
+    let bati = null;
+    const svc = {
+      batiments: async () => bati || (bati = Rech.chargerBatiments(await telecharger(code, commune.codeDepartement, "batiments"))),
+      adresse: pt => adresse(pt, code),
+    };
+    const log = t => statut(t);
+    let res;
+    try { res = await Rech.rechercher(P, prm, svc, log, f => prog(f)); }
+    catch (e) {
+      if (/Overpass/.test(e.message) && !prm.piscine && prm.exclureVoies) {   // voies : on continue sans ce filtre
+        prm.exclureVoies = false; P.forEach(p => { delete p.voie; });
+        statut("OpenStreetMap injoignable : voies publiques non filtrées.", true); await pause();
+        res = await Rech.rechercher(P, prm, svc, log, f => prog(f));
+        res.stats.unshift("ATTENTION : voies publiques non filtrées (Overpass injoignable)");
+      } else throw e;
+    }
+    prog(null);
+    let B = res.bati || bati;
+    if (!B) { try { B = await svc.batiments(); } catch { B = null; } }
+    if (!res.resultats.length) { statut(`Aucun résultat à ${prm.cible} m² (±${prm.tol} %). Augmente la tolérance ou le nombre de parcelles.`, true); detailFiltres(res); return; }
+    let msg = `${res.total} résultat(s) (${res.mode}) à ${commune.nom}, ${res.resultats.length} affiché(s).`;
+    if (cpFiltre) msg += ` Limité au code postal ${cpFiltre}.`;
+    if (res.ecartes) msg += ` ${res.ecartes} redondant(s) écarté(s).`;
+    if (res.tronque) msg += " Recherche interrompue (trop de combinaisons) : réduis la tolérance.";
+    statut(msg, res.tronque);
+    detailFiltres(res);
+    let n = 1;
+    for (const g of res.resultats) await afficher(P, g, n++, res, prm, code, out, B);
+  } catch (e) {
+    prog(null);
+    statut(`${e.message}${erreurReseau(e)}`, true);
+  } finally { $("go").disabled = false; }
+}
+
+function detailFiltres(res) {
+  if (!res.stats.length) return;
+  const d = el("details", {}, el("summary", {}, "Détail des filtres"), el("ul", {}, ...res.stats.map(s => el("li", {}, s))));
+  $("out").prepend(el("div", { class: "card" }, d));
+}
+
+/* ---------- formulaire ---------- */
+const CHAMPS = ["surface", "commune", "tol", "maxp", "maxr", "piscine", "constr", "seuil", "gkey"];
+const COCHES = ["aussi", "voies", "inclus"];
+function majSeuil() { $("seuilw").hidden = $("constr").value !== "oui"; }
+$("constr").addEventListener("change", majSeuil);
+
+$("f").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  try { localStorage.setItem("cp2", JSON.stringify(Object.fromEntries([...CHAMPS.map(i => [i, $(i).value]), ...COCHES.map(i => [i, $(i).checked])]))); } catch {}
+  $("go").disabled = true; statut("Recherche de la commune…"); $("out").replaceChildren(); $("choix").hidden = true;
+  try {
+    const saisie = $("commune").value, cs = await chercherCommunes(saisie);
+    if (!cs.length) { statut("Aucune commune trouvée avec ces critères.", true); $("go").disabled = false; return; }
+    if (cs.length === 1) { await lancer(cs[0], saisie); return; }
+    statut("Plusieurs communes correspondent, choisis-en une :");
+    const box = $("choix"); box.replaceChildren(); box.hidden = false;
+    cs.forEach(c => {
+      const b = el("button", { type: "button", class: "alt" }, `${c.nom} (INSEE ${c.code}, CP ${c.codesPostaux.join(", ")})`);
+      b.onclick = () => lancer(c, saisie); box.append(b);
+    });
+    $("go").disabled = false;
+  } catch (e) { statut(`${e.message}${erreurReseau(e)}`, true); $("go").disabled = false; }
+});
+
+try {
+  const s = JSON.parse(localStorage.getItem("cp2") || "null");
+  if (s) { CHAMPS.forEach(i => { if (s[i] !== undefined) $(i).value = s[i]; }); COCHES.forEach(i => { $(i).checked = !!s[i]; }); }
+} catch {}
+majSeuil();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
